@@ -1,0 +1,7 @@
+﻿  MyForm.cpp
+  .NETFramework,Version=v4.5.2.AssemblyAttributes.cpp
+  MyForm.obj : /DEBUG:FASTLINK is not supported when managed code is present; restarting link with /DEBUG:FULL
+MyForm.obj : error LNK2028: unresolved token (0A00002E) "extern "C" long __stdcall GetDefaultKinectSensor(struct IKinectSensor * *)" (?GetDefaultKinectSensor@@$$J14YGJPAPAUIKinectSensor@@@Z) referenced in function "private: void __clrcall Glasses::MyForm::MyForm_Load(class System::Object ^,class System::EventArgs ^)" (?MyForm_Load@MyForm@Glasses@@$$FA$AAMXP$AAVObject@System@@P$AAVEventArgs@4@@Z)
+MyForm.obj : error LNK2019: unresolved external symbol "extern "C" long __stdcall GetDefaultKinectSensor(struct IKinectSensor * *)" (?GetDefaultKinectSensor@@$$J14YGJPAPAUIKinectSensor@@@Z) referenced in function "private: void __clrcall Glasses::MyForm::MyForm_Load(class System::Object ^,class System::EventArgs ^)" (?MyForm_Load@MyForm@Glasses@@$$FA$AAMXP$AAVObject@System@@P$AAVEventArgs@4@@Z)
+C:\Program Files\Microsoft SDKs\Kinect\v2.0_1409\Lib\x64\Kinect20.lib : warning LNK4272: library machine type 'x64' conflicts with target machine type 'X86'
+F:\Webcam_AR\Glasses\Debug\Glasses.exe : fatal error LNK1120: 2 unresolved externals
