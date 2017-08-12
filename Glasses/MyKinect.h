@@ -6,6 +6,7 @@
 #include "opencv2/imgproc/imgproc.hpp"
 #include <vector>
 #include <iostream>
+#include <array>
 namespace Kinect
 {
 	using namespace cv;
@@ -447,7 +448,7 @@ namespace Kinect
 			return S_OK;
 		}
 		
-		HRESULT Image_move()
+		HRESULT Image_Move()
 		{
 			return S_OK;
 		}
@@ -470,18 +471,95 @@ namespace Kinect
 			cv::putText(background->Get_image(), textint, P1,  fontFace,  fontScale,  color,  thickness);
 			return S_OK;
 		}
-		HRESULT plot_Two_Joint(vector<cv::Point> track)
+		HRESULT plot_Two_Joint(vector<cv::Point> track,int Line_weight)
 		{
 			vector <cv::Point>::iterator it = track.begin();
 			for (int i = 0; (it + 1) != track.end(); it++, i++)
 			{
-				Plot_Line(track[i].x, track[i + 1].x, track[i].y, track[i + 1].y);
+				Plot_Line(track[i].x, track[i + 1].x, track[i].y, track[i + 1].y, (BACKGROUND_BLUE | BACKGROUND_INTENSITY), Line_weight);
 			}
 			return S_OK;
 		}
 		Picture* Get_background()
 		{
 			return background;
+		}
+	};
+	class Trig_Item
+	{
+	public:
+		cv::Point Trig_org;
+		int Trig_reg[2];
+		double Trig_Threshold;
+		Trig_Item(int Trig_orgX,int Trig_orgY, int Trig_regX, int Trig_regY,double Trig_Threshold=0.015)
+		{
+			//Trig Origin
+			this->Trig_org.x = Trig_orgX;
+			this->Trig_org.y = Trig_orgY;
+			//Trig Range
+			this->Trig_reg[0] = Trig_regX;
+			this->Trig_reg[1] = Trig_regY;
+			//Trig Threshold
+			this->Trig_Threshold = Trig_Threshold;
+		}
+	};
+	class TrigBox
+	{
+	private:
+		//Trig Count Max 20 Point at i7-3770 + 8GB RAM + GTX750TI + 1920*1080 Kinect V2 Color Frame
+		array<Trig_Item*,20> Box;
+	public:
+		TrigBox()
+		{
+			for (const Trig_Item* Box_items : Box)Box_items = nullptr;
+		}
+		HRESULT Put_Items_Box(Trig_Item **Input_Trig,int Trig_Count)
+		{
+			for (int i = 0; i < size(Box);i++)this->Box[i] = Input_Trig[i];
+			return S_OK;
+		}
+		array<Trig_Item*,20> Get_Box()
+		{
+			return Box;
+		}
+	};
+	class Trig
+	{
+	private:
+		TrigBox *Box1;
+		Mykinect *Background;
+	public:
+		Trig(TrigBox *InputBox,Mykinect *Input_Background)
+		{
+			this->Box1 = InputBox;
+			this->Background = Input_Background;
+		}
+		int Trig_Color_func()
+		{
+			//update webcam picture
+			Mat *Update_background = Background->Colorframe();
+			Mat imageROI1;
+			Mat hsv;
+			//各顏色的閥值
+			Mat b; 
+			for (int i = 0; i < size(Box1->Get_Box()); i++)
+			{
+				imageROI1 = (*Update_background)(Rect(
+					Box1->Get_Box()[i]->Trig_org.x, 
+					Box1->Get_Box()[i]->Trig_org.y,
+					Box1->Get_Box()[i]->Trig_reg[0], 
+					Box1->Get_Box()[i]->Trig_reg[1])
+				);
+				Mat mask = Mat::zeros(imageROI1.rows, imageROI1.cols, CV_8U); //為了濾掉其他顏色
+				cvtColor(imageROI1, hsv, CV_BGR2HSV);
+				//Blue
+				inRange(hsv, Scalar(90, 100, 0), Scalar(130, 255, 255), b);
+				if ((float)sum(b)[1] / ((float)Box1->Get_Box()[i]->Trig_reg[0] * (float)Box1->Get_Box()[i]->Trig_reg[1] * 255.0) > Box1->Get_Box()[i]->Trig_Threshold)
+				{
+					return i;
+				}
+			}
+			return 0;
 		}
 	};
 }

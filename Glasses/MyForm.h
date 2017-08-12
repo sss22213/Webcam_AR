@@ -111,7 +111,7 @@ namespace Glasses {
 #pragma endregion
 	private: System::Void MyForm_Load(System::Object^  sender, System::EventArgs^  e) {
 		//OPenCV CPU ISA Optimized
-		//setUseOptimized(true);
+		setUseOptimized(true);
 		//Init System Time(10 ms)
 		timer1->Interval = 300;
 		timer1->Start();
@@ -211,10 +211,9 @@ private: System::Void button1_Click(System::Object^  sender, System::EventArgs^ 
 			double *temp = Joints.Get_Joint(JointType::JointType_HandRight);
 			cv::Point pp1(Joints.Joint_info[1], Joints.Joint_info[2]);
 			track.push_back(pp1);
-			View1.plot_Two_Joint(track);
+			View1.plot_Two_Joint(track,100);
 			printf("The People: %d, X IN %4.1f,Y IN %4.1f\n", temp[0], temp[1], temp[2]);
 			View1.Image_puts();
-			View1.Plot_Text(temp[1], temp[2], "Bohung", 2);
 			cv::imshow("TT", backgrounds.Get_image());
 			//Need to after the imshow
 			backgrounds.Change_Mat(*Sensor.Colorframe());
