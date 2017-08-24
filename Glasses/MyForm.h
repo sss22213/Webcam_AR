@@ -115,7 +115,6 @@ namespace Glasses {
 		//Init System Time(10 ms)
 		timer1->Interval = 300;
 		timer1->Start();
-
 #define debug 0
 #if debug
 		MyJoint *JS;
@@ -199,25 +198,43 @@ private: System::Void button1_Click(System::Object^  sender, System::EventArgs^ 
 		Picture backgrounds(*Sensor.Colorframe(), 0);
 		MyPictureBox Box1;
 		view View1(&backgrounds, &Box1);
-		vector<cv::Point> track;
 		backgrounds.Change_Mat(*Sensor.Colorframe());
+		Trig_Item *Trig_point1[] = 
+		{ 
+			new Trig_Item(0,0,200,200)
+		};
+		TrigBox *TBox = new TrigBox;
+		TBox->Put_Items_Box(Trig_point1,1);
 		//Glasses
 		Picture Glasses("F:\\Webcam_AR\\image\\glassesss.png", 0, 0, 0);
 		Glasses.Add_Position((View1.Get_background()->Get_image().cols) / 2 - Glasses.Get_image().cols / 2 -100, 0);
 		Box1.MyPictureBox_put(&Glasses);
 		Glasses.Picture_resize(0, 0, 1.4, 1.4);
+		cout << Glasses.Get_image().cols << endl;
+		cout << Glasses.Get_image().rows << endl;
+		/*Trig *Trig1 = new Trig(TBox, &Sensor,
+			(View1.Get_background()->Get_image().cols) / 2 - Glasses.Get_image().cols / 2 - 100, 
+			0, Glasses.Get_image().cols,Glasses.Get_image().rows,50);*/
+		Trig *Trig1 = new Trig(TBox, &Sensor, 0,0,1920,1080,500);
+		int count = 0;
+		vector<cv::Point> track;
 		while (1)
 		{
-			double *temp = Joints.Get_Joint(JointType::JointType_HandRight);
-			cv::Point pp1(Joints.Joint_info[1], Joints.Joint_info[2]);
-			track.push_back(pp1);
-			View1.plot_Two_Joint(track,100);
-			printf("The People: %d, X IN %4.1f,Y IN %4.1f\n", temp[0], temp[1], temp[2]);
-			View1.Image_puts();
+			//View1.Image_puts_GPU();
 			cv::imshow("TT", backgrounds.Get_image());
+			Mat Background_pic = *Sensor.Colorframe();
 			//Need to after the imshow
-			backgrounds.Change_Mat(*Sensor.Colorframe());
-			cv::waitKey(30);
+			backgrounds.Change_Mat(Background_pic);
+			cv::Point PP1 = Trig1->Trig_Color_func_GPU(Background_pic);
+			if (PP1.x != 0 && PP1.y != 0)
+			{
+				//cout << PP1.x << "¡A" << PP1.y << endl;
+				track.push_back(PP1);
+				View1.plot_Two_Joint(track, 20);
+			}
+			
+			//View1.Plot_Circle(PP1.x, PP1.y, 20);
+			cv::waitKey(10);
 		}
 }
 };

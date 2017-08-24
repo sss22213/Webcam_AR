@@ -1,0 +1,31 @@
+﻿  MyForm.cpp
+f:\webcam_ar\glasses\glasses\MyKinect.h(233): warning C4244: '=': conversion from 'UINT64' to 'double', possible loss of data
+f:\webcam_ar\glasses\glasses\MyKinect.h(309): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt\stdio.h(205): note: see declaration of 'fopen'
+f:\webcam_ar\glasses\glasses\MyKinect.h(427): warning C4267: 'return': conversion from 'size_t' to 'int', possible loss of data
+f:\webcam_ar\glasses\glasses\MyForm.h(212): warning C4305: 'argument': truncation from 'double' to 'float'
+f:\webcam_ar\opencv\include\opencv2\core\cvstd.hpp(575): warning C4793: 'cv::String::String': function compiled as native:
+  	Found an intrinsic not supported in managed code
+f:\webcam_ar\opencv\include\opencv2\core\cuda.inl.hpp(105): warning C4793: 'cv::cuda::GpuMat::GpuMat': function compiled as native:
+  	Found an intrinsic not supported in managed code
+f:\webcam_ar\opencv\include\opencv2\core\cuda.inl.hpp(395): warning C4793: 'cv::cuda::HostMem::HostMem': function compiled as native:
+  	Found an intrinsic not supported in managed code
+f:\webcam_ar\glasses\glasses\mykinect.h(116): warning C4700: uninitialized local variable 'ss' used
+f:\webcam_ar\opencv\include\opencv2\core\mat.inl.hpp(482): warning C4793: 'cv::Mat::Mat': function compiled as native:
+  	Found an intrinsic not supported in managed code
+f:\webcam_ar\opencv\include\opencv2\core\mat.inl.hpp(803): warning C4793: 'cv::Mat::release': function compiled as native:
+  	Found an intrinsic not supported in managed code
+f:\webcam_ar\opencv\include\opencv2\core\mat.inl.hpp(2083): warning C4793: 'cv::SparseMat::addref': function compiled as native:
+  	Found an intrinsic not supported in managed code
+f:\webcam_ar\opencv\include\opencv2\core\mat.inl.hpp(3683): warning C4793: 'cv::UMat::addref': function compiled as native:
+  	Found an intrinsic not supported in managed code
+f:\webcam_ar\opencv\include\opencv2\core\mat.inl.hpp(701): warning C4793: 'cv::Mat::operator=': function compiled as native:
+  	Found an intrinsic not supported in managed code
+f:\webcam_ar\opencv\include\opencv2\core\mat.inl.hpp(803): warning C4793: 'cv::Mat::release': function compiled as native:
+  	Found an intrinsic not supported in managed code
+f:\webcam_ar\opencv\include\opencv2\core\ptr.inl.hpp(67): warning C4793: 'cv::detail::PtrOwner::incRef': function compiled as native:
+  	Found an intrinsic not supported in managed code
+f:\webcam_ar\opencv\include\opencv2\core\ptr.inl.hpp(72): warning C4793: 'cv::detail::PtrOwner::decRef': function compiled as native:
+  	Found an intrinsic not supported in managed code
+  Glasses.vcxproj -> F:\Webcam_AR\Glasses\x64\Release\Glasses.exe
+  Glasses.vcxproj -> F:\Webcam_AR\Glasses\x64\Release\Glasses.pdb (Full PDB)

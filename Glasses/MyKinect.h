@@ -4,6 +4,13 @@
 #include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
 #include "opencv2/imgproc/imgproc.hpp"
+#include "opencv2/cudaimgproc.hpp"
+#include "opencv2/core/cuda.hpp"
+#include "opencv2/videoio.hpp"
+#include "opencv2/cudafilters.hpp"
+#include "opencv2/cudaimgproc.hpp"
+#include "opencv2/cudaarithm.hpp"
+
 #include <vector>
 #include <iostream>
 #include <array>
@@ -95,6 +102,7 @@ namespace Kinect
 		Mat *Colorframe()
 		{
 			int height = 0, width = 0;  
+			//Mat Color_temp(1080, 1920, CV_8UC4);
 			//Get Color frame size
 			IFrameDescription * myDescription = nullptr;
 			pColorFrameSource->get_FrameDescription(&myDescription);
@@ -112,6 +120,10 @@ namespace Kinect
 			//kinect color convert to mat
 			pFrame->CopyConvertedFrameDataToArray(1920 * 1080 * 4, reinterpret_cast<BYTE*>((*Color_image).data), ColorImageFormat_Bgra);
 			pFrame->Release();
+			/*cv::Size sss(1280,720);
+			cv::resize(Color_temp, Color_temp, sss);
+			cv::imshow("ss", Color_temp);
+			Color_image->copyTo(Color_temp);*/
 			//horizontal flip
 			//flip(*Color_image,*Color_image,1);
 			return Color_image;
@@ -259,6 +271,7 @@ namespace Kinect
 		//Class picture Include Mat object entity
 		Mat image;
 	public:
+		cv::cuda::GpuMat *image_GPU;
 		int position_x;
 		int position_y;
 		//Picure border
@@ -272,6 +285,7 @@ namespace Kinect
 			this->position_x = -1;
 			this->position_y = -1;
 			this->image = INputMat;
+			this->image_GPU=new cv::cuda::GpuMat(image);
 			this->Picture_Load();
 		}
 		Picture(Mat INputMat, int ID1, int position_x1, int position_y1)
@@ -280,6 +294,7 @@ namespace Kinect
 			this->position_x = position_x1;
 			this->position_y = position_y1;
 			this->image = INputMat;
+			this->image_GPU = new cv::cuda::GpuMat(image);
 			this->Picture_Load();
 		}
 		//Create Picture information,and provide position
@@ -429,7 +444,34 @@ namespace Kinect
 			{
 				Mat back = (background->Get_image());
 				//kinect's Color frame is 8UC4 , but Mat is 8UC3.Therefore convert it.
-				cv::cvtColor(back, back, CV_BGRA2BGR);
+				cvtColor(back, back, CV_BGRA2BGR);
+				Mat logo = (PicBox->MyPictureBox_Get())->at(i)->Get_image();
+				if (!logo.data) { cerr << "Error" << endl; }
+				//Mat Temp
+				Mat ImageROT;
+				//Mask
+				Mat mask = logo;
+				//Setting area
+				ImageROT = back(Rect((PicBox->MyPictureBox_Get()->at(i))->position_x, (PicBox->MyPictureBox_Get()->at(i))->position_y, logo.cols, logo.rows));
+				//Tweak color
+				addWeighted(ImageROT, 0.5, logo, 0.5, 0, ImageROT);
+				//Picture
+				logo.copyTo(ImageROT, mask);
+				//save return background
+				background->Change_Mat(back);
+			}
+			return S_OK;
+		}
+		HRESULT Image_puts_GPU()
+		{
+			vector <Picture*>::iterator it = (PicBox->MyPictureBox_Get())->begin();
+			for (int i = 0; it != (PicBox->MyPictureBox_Get())->end(); it++, i++)
+			{
+				Mat back_CPU = (background->Get_image());
+				cv::cuda::GpuMat back_GPU(back_CPU);
+				//kinect's Color frame is 8UC4 , but Mat is 8UC3.Therefore convert it.
+				cv::cuda::cvtColor(back_GPU, back_GPU, CV_BGRA2BGR);
+				Mat back(back_GPU);
 				Mat logo = (PicBox->MyPictureBox_Get())->at(i)->Get_image();
 				if (!logo.data) { cerr << "Error" << endl; }
 				//Mat Temp
@@ -528,38 +570,124 @@ namespace Kinect
 	private:
 		TrigBox *Box1;
 		Mykinect *Background;
+		int Trig_ORGX;
+		int Trig_ORGY;
+		int Trig_RangeX;
+		int Trig_RangeY;
+		int Trig_One_Range;
+		cv::Point locationl;
 	public:
-		Trig(TrigBox *InputBox,Mykinect *Input_Background)
+		Trig(TrigBox *InputBox,Mykinect *Input_Background, int Input_Trig_ORGX=0, 
+			int Input_Trig_ORGY = 0,int Input_Trig_RangeX=1700, int Input_Trig_RangeY=700,int Input_Trig_One_Range=100)
 		{
 			this->Box1 = InputBox;
 			this->Background = Input_Background;
+			this->Trig_ORGX = Input_Trig_ORGX;
+			this->Trig_ORGY = Input_Trig_ORGY;
+			if (Input_Trig_RangeX < Input_Trig_One_Range)
+			{
+				cerr << "Trig Range must be large than Trig One Range"<< endl;
+				exit(-1);
+			}
+			this->Trig_RangeX = Input_Trig_RangeX;
+			this->Trig_RangeY = Input_Trig_RangeY;
+			this->Trig_One_Range = Input_Trig_One_Range;
 		}
-		int Trig_Color_func()
+		int Trig_Color_func(Mat Update_background,int orgX,int orgY,int regX,int regY)
 		{
 			//update webcam picture
-			Mat *Update_background = Background->Colorframe();
+			//Mat *Update_background = &(Backgrounds->Get_image());
 			Mat imageROI1;
 			Mat hsv;
 			//各顏色的閥值
 			Mat b; 
+			//kinect V2 Convert to BGR
+			cv::cvtColor(Update_background, Update_background, CV_BGRA2BGR);
 			for (int i = 0; i < size(Box1->Get_Box()); i++)
 			{
-				imageROI1 = (*Update_background)(Rect(
-					Box1->Get_Box()[i]->Trig_org.x, 
-					Box1->Get_Box()[i]->Trig_org.y,
-					Box1->Get_Box()[i]->Trig_reg[0], 
-					Box1->Get_Box()[i]->Trig_reg[1])
-				);
+				imageROI1 = (Update_background)(Rect(orgX, orgY, regX, regY));
 				Mat mask = Mat::zeros(imageROI1.rows, imageROI1.cols, CV_8U); //為了濾掉其他顏色
 				cvtColor(imageROI1, hsv, CV_BGR2HSV);
 				//Blue
-				inRange(hsv, Scalar(90, 100, 0), Scalar(130, 255, 255), b);
-				if ((float)sum(b)[1] / ((float)Box1->Get_Box()[i]->Trig_reg[0] * (float)Box1->Get_Box()[i]->Trig_reg[1] * 255.0) > Box1->Get_Box()[i]->Trig_Threshold)
+				//inRange(hsv, Scalar(90, 100, 0), Scalar(130, 255, 255), b);
+				inRange(hsv, Scalar(100, 43, 46), Scalar(124, 255, 255), b);
+				//cv:waitKey(500);
+				if ((float)sum(b)[0] / ((float)regX *(float)regY * 255.0) > 0.001)
 				{
 					return i;
 				}
 			}
-			return 0;
+			return -1;
 		}
+		cv::Point Trig_Color_func_GPU(Mat Update_background)
+		{
+
+			//locationl.x = 0;
+			//locationl.y = 0;
+			//update webcam picture
+			cv::cuda::GpuMat imageROI1(Update_background);
+			cv::cuda::GpuMat hsv;
+			//各顏色的閥值
+			Mat b;
+			//kinect V2 Convert to BGR
+			cv::cuda::cvtColor(imageROI1, imageROI1, CV_BGRA2BGR);
+			//cv::cuda::GpuMat mask = cv::cuda::zeros(imageROI1.rows, imageROI1.cols, CV_8U); //為了濾掉其他顏色
+			cv::cuda::cvtColor(imageROI1, hsv, CV_BGR2HSV);
+			Mat hsv1(hsv);
+			Mat hsv2 = hsv1(Rect(Trig_ORGX, Trig_ORGY, Trig_RangeX, Trig_RangeY));
+			//Blue
+			inRange(hsv2, Scalar(90, 100, 0), Scalar(130, 255, 255), b);
+			//inRange(hsv2, Scalar(100, 43, 46), Scalar(124, 255, 255), b);
+			//argmax(b)
+			double minVal,maxVal = 0.0;
+			cv::Point minLoc,maxLoc;
+			minMaxLoc(b, &minVal,&maxVal, &minLoc,&maxLoc);
+			imshow("Catch", b);
+			//
+			//cout << "X:" << maxLoc.x << endl;
+			cout << "Y:" << maxLoc.y << endl;
+		/*	if ((maxLoc.x + Trig_One_Range < Trig_RangeX) && (maxLoc.y + Trig_One_Range < Trig_RangeY))
+			{
+				Mat binary_roi = b(Rect(0, 0, maxLoc.x + Trig_One_Range, maxLoc.y + Trig_One_Range));
+				if ((float)sum(binary_roi)[0] / ((float)Trig_One_Range *(float)Trig_One_Range * 255.0) > 0.02)
+				{
+					locationl.x = Trig_ORGX + maxLoc.x;
+					locationl.y = Trig_ORGY + maxLoc.y;
+				}
+			}*/
+			locationl.x = Trig_ORGX + maxLoc.x;
+			locationl.y = Trig_ORGY + maxLoc.y;
+			//cv:waitKey(500);
+			return locationl;
+		}
+		void inRange_gpu(cv::Mat &src, cv::Scalar &lowerb, cv::Scalar &upperb,Mat &dst) 
+		{
+			const int m = 32;
+			int numRows = src.rows, numCols = src.cols;
+			if (numRows == 0 || numCols == 0) return;
+			Mat h, s, v;
+			Mat channel[3];
+			
+			//Split src's hsv
+			cv::split(src, channel);
+			//
+			cv::cuda::GpuMat channel0_GPU(channel[0]);
+			cv::cuda::GpuMat channel1_GPU(channel[1]);
+			cv::cuda::GpuMat channel2_GPU(channel[2]);
+			cv::cuda::GpuMat* channel_GPU_Temp = new cv::cuda::GpuMat[3];
+			cv::cuda::GpuMat* channel_GPU_Temp2 = new cv::cuda::GpuMat[3];
+			cv::cuda::GpuMat* channel_GPU_combin = new cv::cuda::GpuMat[3];
+			// lower band
+			cv::cuda::threshold(channel0_GPU, channel_GPU_Temp[0], lowerb[0],255, THRESH_BINARY_INV);
+			cv::cuda::threshold(channel1_GPU, channel_GPU_Temp[1], lowerb[1],255, THRESH_BINARY_INV);
+			cv::cuda::threshold(channel2_GPU, channel_GPU_Temp[2], lowerb[2],255, THRESH_BINARY_INV);
+			// upper band
+			cv::cuda::threshold(channel0_GPU, channel_GPU_Temp2[0], upperb[0], 255, THRESH_BINARY);
+			cv::cuda::threshold(channel1_GPU, channel_GPU_Temp2[1], upperb[1], 255, THRESH_BINARY);
+			cv::cuda::threshold(channel2_GPU, channel_GPU_Temp2[2], upperb[2], 255, THRESH_BINARY);
+			//combine
+			//channel_GPU_combin[0] = channel_GPU_Temp[0] + channel_GPU_Temp2[0];
+		}
+
 	};
 }
